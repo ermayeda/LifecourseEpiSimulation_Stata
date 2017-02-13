@@ -11,15 +11,15 @@
 
 
 wfenv fh2016sim , a(sim) alg
-global N=1500
+global N=100,000
 local N=$N
 local B= 2000
 global B = `B'
-*global causalcondition = 5 // 1 2 3 4 5
+*global causalcondition = 5 // 1 2 3 4
 
 include $analysis/sim-005-start-latex.do
 
-foreach causalcondition in 1 2 3 4 5 {
+foreach causalcondition in 1 2 3 4 {
    global causalcondition=`causalcondition'
    capture erase c:\trash\Sim_N`N'_nreps_`B'_`causalcondition'.xlsx
    tex section{Causal condition `causalcondition'}
