@@ -4,135 +4,128 @@
 * -------------------
 
 * paramcoefficients.do
-global pexp = 0.4 // prevalence of graduating HS. reference: high education group
+global pexp = 0.4 // prevalence of exposure (higher values=harmful)
 global seeed = 8675309
 set seed $seeed
-* new decision
-* U1: genetic risk
-* U2: pathology
+* U1: determinant of cognitive decline (higher values=harmful), independent of exposure
+* U2: determinant of cognitive decline (higher values=harmful), influenced by exposure
 
-* Effect of education to pathology (U2)
-global h0 = .5
+* Effect of exposure (education) on U2
+global a0 = .5
 
 *iii. Variances and correlations
-global s2z0 = 0.2     //variance of random cognitive intercept
-global s2z1 = 0.005   //variance of random cognitive slope
-global sz01 = -0.03   //covariance of random intercept and random slope
-global s2e = 0.70     //variance of unexplained variation in Cij
-global rho = 0.40     //correlation between noise terms for Cij
+global s2z0 = 0.2    //variance of random cognitive intercept
+global s2z1 = 0.005  //variance of random cognitive slope
+global sz01 = -0.03  //covariance of random intercept and random slope
+global s2e = 0.70    //variance of unexplained variation in Cij
+global rho = 0.40    //correlation between noise terms for Cij
 global s2d = 0.3     //variance of measurement error of Cij - .19
 
 /*
-scenarios 7/13/16
-   1 unbiased situation
-   2 u1 pathology affects survival. has less variability.
-   3 u1 pathology education intx?
-   4 u2 genetics on survival.
-u2's variance is larger than u1.
+Causal Structures
+   1 exposure influences mortality; no bias anticipated
+   2 collider-sratification: exposure and U1 influence mortality
+   3 collider-stratification with interaction: multiplicative interaction between exposure and U1 on mortality
+   4 collider stratification with mediation: exposure and U2 influence mortality
+U2's variance is larger than U1's variance
 */
 
-
+*paramset=1 is the "moderate" input parameter set; paramset=2 is the "aggressive" input parameter set.
 if `paramset'==1 {
 
    *parameters for Cij
-   global b00 = 0        //cognitive intercept for unexposed
+   global b00 = 0       //cognitive intercept for unexposed
    global b01 = -.2     //effect of exposure on cognitive intercept
-   global b02 = -0.05   //effect of u1 on cognitive intercept
-   global b03 = -.2    //effect of U2 on cognitive intercept
-   global b10 = -0.05    //cognitive slope for unexposed (high educ group)
-   global b11 = -0.05    //direct effect of exposure on cognitive slope
-   global b12 = -0.05   //effect of u1 on cognitive slope
+   global b02 = -0.05   //effect of U1 on cognitive intercept
+   global b03 = -.2     //effect of U2 on cognitive intercept
+   global b10 = -0.05   //cognitive slope for unexposed 
+   global b11 = -0.05   //direct effect of exposure on cognitive slope
+   global b12 = -0.05   //effect of U1 on cognitive slope
    global b13 = -0.05   //effect of U2 on cognitive slope
 
-   * New: model the survival to age 65
-   *global g0 = ln(4) // overall odds of survival in the reference category (low educ group). 81%
-   *global g0 = ln(4) - $pexp*$g1 // because we want to adjust g0 for the additional people who died due to low educ.
-            * odds = p/(1-p)=.81/.19=4
-            * .83*.98. 83% of newborns survive to age 65. US Life Tables 2006. 98% of newborns survive to age 20
-   global g1 = -ln(2) // log OR of educ-->survival
-   global g2 = -ln(1) // log OR of u1 on survival (pathology)
-   global g3 = -ln(1) // log OR of u2 on survival (genetics)
-   global g4 = -ln(1) // log OR of intx between educ and U1 on survival
-   if $causalcondition==1 { // no bias
+   *model death by age K
+   *global g0 = ln(4)   //odds of death by age K for reference group
+   global g1 = -ln(2)   //log OR for effect of exposure on death
+   global g2 = -ln(1)   //log OR for effect of U1 on death
+   global g3 = -ln(1)   //log OR for effect of U2 on death
+   global g4 = -ln(1)   //log OR for interaction between exposure and U1 on death
+   if $causalcondition==1 {   //exposure influences mortality; no bias anticipated
       di "Hi!"
-      *global b11 = $b11 + $h0*$b12
+      *global b11 = $b11 + $a0*$b12
       di -0.1+.3*-0.05
    }
-   if $causalcondition==2 { // u1 affects survival
-      global g2 = -ln(2) // log OR of u1 on survival (pathology)
+   if $causalcondition==2 {   //collider-sratification: exposure and U1 influence mortality
+      global g2 = -ln(2)      //log OR for effect of U1 on death
    }
    else {
-      global g2 = -ln(1) // log OR of u1 on survival (pathology)
+      global g2 = -ln(1)      //log OR for effect of U1 on death
    }
-   if $causalcondition==3 { // it's like a silencing interaction when we keep g2==0. U2 only has an effect in the exposed.
-      global g4 = -ln(2)   // log OR of intx between educ and U1 on survival
+   if $causalcondition==3 {   //collider-stratification with interaction: multiplicative interaction between exposure and U1 on mortality 
+      global g4 = -ln(2)      //log OR for interaction between exposure and U1 on death
    }
-   else { // it's like a silencing interaction when we keep g2==0. U2 only has an effect in the exposed.
-      global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
+   else { 
+      global g4 = -ln(1)      //log OR for interaction between exposure and U1 on death
    }
-   if $causalcondition==4 {
-      global g3 = -ln(2) // log OR of u2 on survival (genetics)
+   if $causalcondition==4 {   //collider stratification with mediation: exposure and U2 influence mortality
+      global g3 = -ln(2)      //log OR for effect of U2 on death
    }
    else {
-      global g3 = -ln(1) // log OR of u2 on survival (genetics)
+      global g3 = -ln(1)      //log OR for effect of U2 on death
    }
    if $causalcondition==5 {
       * to comment this out is like having a silencing intx.
-      *global g2 = -ln(1.5) // log OR of u1 on survival (pathology)
-      global g3 = -ln(2) // log OR of u2 on survival (genetics)
-      global g4 = -ln(2)   // log OR of intx between educ and U1 on survival
+      *global g2 = -ln(1.5)   //log OR for effect of U1 on death
+      global g3 = -ln(2)      //log OR for effect of U2 on death
+      global g4 = -ln(2)      //log OR for interaction between exposure and U1 on death
    }
    else {
-      global g3 = -ln(1) // log OR of u2 on survival (genetics)
-      global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
+      global g3 = -ln(1)      //log OR for effect of U2 on death
+      global g4 = -ln(1)      //log OR for interaction between exposure and U1 on death
    }
 }
 
 if `paramset'==2 {
 
    *parameters for Cij
-   global b00 = 0        //cognitive intercept for unexposed
-   global b01 = -.2     //effect of exposure on cognitive intercept
-   global b02 = -0.05   //effect of u1 on cognitive intercept
-   global b03 = -.2    //effect of U2 on cognitive intercept
-   global b10 = -0.05    //cognitive slope for unexposed (high educ group)
-   global b11 = -0.1    //direct effect of exposure on cognitive slope
-   global b12 = -0.1   //effect of u1 on cognitive slope
-   global b13 = -0.1   //effect of U2 on cognitive slope
+   global b00 = 0             //cognitive intercept for unexposed
+   global b01 = -.2           //effect of exposure on cognitive intercept
+   global b02 = -0.05         //effect of U1 on cognitive intercept
+   global b03 = -.2           //effect of U2 on cognitive intercept
+   global b10 = -0.05         //cognitive slope for unexposed 
+   global b11 = -0.1          //direct effect of exposure on cognitive slope
+   global b12 = -0.1          //effect of U1 on cognitive slope
+   global b13 = -0.1          //effect of U2 on cognitive slope
 
-   * New: model the survival to age 65
-   *global g0 = ln(4) // overall odds of survival in the reference category (low educ group). 81%
-   *global g0 = ln(4) - $pexp*$g1 // because we want to adjust g0 for the additional people who died due to low educ.
-            * odds = p/(1-p)=.81/.19=4
-            * .83*.98. 83% of newborns survive to age 65. US Life Tables 2006. 98% of newborns survive to age 20
-   global g1 = -ln(6) // log OR of educ-->survival
-   global g2 = -ln(1) // log OR of u1 on survival (pathology)
-   global g3 = -ln(1) // log OR of u2 on survival (genetics)
-   global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
-   if $causalcondition==1 { // no bias
+   *model death by age K
+   *global g0 = ln(4)   //odds of death by age K for reference group
+   global g1 = -ln(6)   //log OR for effect of exposure on death
+   global g2 = -ln(1)   //log OR for effect of U1 on death
+   global g3 = -ln(1)   //log OR for effect of U2 on death
+   global g4 = -ln(1)   //log OR for interaction between exposure and U1 on death
+   if $causalcondition==1 { //exposure influences mortality; no bias anticipated
       di "Hi!"
       *global b11 = $b11 + $h0*$b12
       di -0.1+.3*-0.05
    }
-   if $causalcondition==2 { // u1 affects survival
-      global g2 = -ln(6) // log OR of u1 on survival (pathology)
+   if $causalcondition==2 {   //collider-sratification: exposure and U1 influence mortality
+      global g2 = -ln(6)      //log OR for effect of U1 on death
    }
    else {
-      global g2 = -ln(1) // log OR of u1 on survival (pathology)
+      global g2 = -ln(1)      //log OR for effect of U1 on death
    }
-   if $causalcondition==3 { // it's like a silencing interaction when we keep g2==0. U2 only has an effect in the exposed.
-      global g4 = -ln(6)   // log OR of intx between educ and U1 on survival
+   if $causalcondition==3 {   //collider-stratification with interaction: multiplicative interaction between exposure and U1 on mortality 
+      global g4 = -ln(6)      //log OR for interaction between exposure and U1 on death
    }
-   else { // it's like a silencing interaction when we keep g2==0. U2 only has an effect in the exposed.
-      global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
+   else { 
+      global g4 = -ln(1)      //log OR for interaction between exposure and U1 on death
    }
-   if $causalcondition==4 {
-      global g3 = -ln(6) // log OR of u2 on survival (genetics)
+   if $causalcondition==4 {   //collider stratification with mediation: exposure and U2 influence mortality
+      global g3 = -ln(6)      //log OR for effect of U2 on death
    }
    else {
-      global g3 = -ln(1) // log OR of u2 on survival (genetics)
+      global g3 = -ln(1)      //log OR for effect of U2 on death
    }
-   if $causalcondition==5 {
+  /* if $causalcondition==5 {
       * to comment this out is like having a silencing intx.
       *global g2 = -ln(1.5) // log OR of u1 on survival (pathology)
       global g3 = -ln(6) // log OR of u2 on survival (genetics)
@@ -141,7 +134,7 @@ if `paramset'==2 {
    else {
       global g3 = -ln(1) // log OR of u2 on survival (genetics)
       global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
-   }
+   }*/
 }
 
 
