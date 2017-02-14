@@ -125,16 +125,6 @@ if `paramset'==2 {
    else {
       global g3 = -ln(1)      //log OR for effect of U2 on death
    }
-  /* if $causalcondition==5 {
-      * to comment this out is like having a silencing intx.
-      *global g2 = -ln(1.5) // log OR of u1 on survival (pathology)
-      global g3 = -ln(6) // log OR of u2 on survival (genetics)
-      global g4 = -ln(6)   // log OR of intx between educ and U1 on survival
-   }
-   else {
-      global g3 = -ln(1) // log OR of u2 on survival (genetics)
-      global g4 = -ln(1)   // log OR of intx between educ and U1 on survival
-   }*/
 }
 
 
@@ -146,9 +136,8 @@ if `paramset'==2 {
 
 * New 6/9/16
 *this is a do file to run the data generating do file with different values for the baseline mortality odds
-* start with a value for the target that is definitely toolow,
-* then it should notify you at the first increment where you are no longer
-* too low
+* start with a value for the target that is definitely too low,
+* then it should notify you at the first increment where you are no longer too low
 clear
 local toolow =1
 local target_p_surv65 =.8
