@@ -13,8 +13,10 @@
 wfenv fh2016sim , a(sim) alg
 global N=100,000
 local N=$N
-local B= 2000
-global B = `B'
+global sample=2000
+local sample=$sample
+global B=2000
+local B=$B
 *global causalcondition = 5 // 1 2 3 4
 
 include $analysis/sim-005-start-latex.do
